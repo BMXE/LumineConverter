@@ -3,26 +3,22 @@ const path = require('path');
 const open = require('open');
 const startServer = require('./callback_server.js');
 const fetch = require('node-fetch');
-
-const file = fs.readFileSync(process.argv[2], 'utf8');
-const lines = file.split('\n')
-var array = [];
-lines.forEach(line => {
-    if (line != "") {
-        const l = line.split('	')
-        array.push({ title: l[0], artist: l[1] })
-    }
-})
-let playlistname = path.basename(process.argv[2], '.txt')
+const parser = require("./parser.js");
 
 let client_id = 'd85da33f849c462b9249819b933e7723'
 let scope = 'playlist-modify-public playlist-read-private playlist-modify-private';
 let state = makeid(16)
 let redirect_uri = 'http://localhost:8888/callback'
+var array
+let playlistname
 
-startServer(state)
+parser.parseTracks(process.argv[2]).then(async (obj) => {
+    array = obj.tracks;
+    playlistname = obj.title;
 
-open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent(client_id)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}`);
+    startServer(state)
+    open(`https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent(client_id)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}`);
+})
 
 function makeid(length) {
     var result = '';

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist Converter</title>
+</head>
+<body>
+    Please wait while we convert your playlist...
+</body>
+<script>
+    let body = {}
+    let array = window.location.hash.substring(1).split('&')
+    for (let i = 0; i < array.length; i++) {
+        let pair = array[i].split('=')
+        body[pair[0]] = decodeURIComponent(pair[1])
+    }
+    fetch('http://localhost:8888/callback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+    })
+    .then(res => {
+        if (res.ok) {
+            document.getElementsByTagName("body")[0].innerHTML = "Your playlist has been converted! You can close this window now."
+        } else {
+            console.log('An error occurred. Please try again.')
+        }
+    })
+</script>
+</html>
