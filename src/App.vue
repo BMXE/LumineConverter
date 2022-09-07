@@ -10,6 +10,14 @@
                         d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1z" />
                 </svg>
                 <span class="user-name">{{ user.display_name }}</span>
+                <div class="user-expand" v-on:click.stop>
+                    <div class="button-base" @click="openUserProfile">
+                        Profile
+                    </div>
+                    <div class="button-base" @click="logout">
+                        Logout
+                    </div>
+                </div>
             </div>
             <input type="text" class="url-input" placeholder="URL to Apple Music Playlist" ref="url">
             <div class="button-base" @click="fetchAndParsePlaylist">
@@ -88,7 +96,7 @@ export default {
         if (location.hash === '' && this.$cookies.get('access_token') === null) {
             let state = this.makeid(16)
             this.$cookies.set('state', state)
-            location.href = `https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent(client_id)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}`
+            location.href = `https://accounts.spotify.com/authorize?response_type=token&client_id=${encodeURIComponent(client_id)}&scope=${encodeURIComponent(scope)}&redirect_uri=${encodeURIComponent(redirect_uri)}&state=${encodeURIComponent(state)}&show_dialog=true`
         } else {
             if (this.$cookies.get('access_token') !== null) {
                 this.access_token = this.$cookies.get('access_token')
@@ -108,7 +116,6 @@ export default {
                     }
                 })
             } else {
-                console.log(location.hash);
                 const params = {}
                 location.hash.substring(1).split('&').forEach(param => {
                     const [key, value] = param.split('=')
@@ -119,8 +126,21 @@ export default {
                     this.$cookies.set('access_token', this.access_token)
                 }
                 this.$cookies.remove('state')
-                console.log(params.state === this.$cookies.get('state'));
-                console.log(params);
+                fetch('https://api.spotify.com/v1/me', {
+                    headers: {
+                        'Authorization': 'Bearer ' + this.access_token
+                    }
+                }).then(res => {
+                    console.log(res.status);
+                    if (res.status !== 200) {
+                        this.$cookies.remove('access_token')
+                        location.href = "https://lumine.oryfox.de/"
+                    } else {
+                        res.json().then(data => {
+                            this.user = data
+                        })
+                    }
+                })
             }
         }
     },
@@ -282,6 +302,12 @@ export default {
         async openUserProfile() {
             window.open("https://open.spotify.com/user/" + this.user.id, "_blank")
         },
+        async logout() {
+            this.access_token = null
+            this.user = null
+            this.$cookies.remove("access_token")
+            location.href = "https://lumine.oryfox.de/"
+        }
     }
 }
 </script>
@@ -393,23 +419,58 @@ input[type="file"]::-webkit-file-upload-button:hover {
     align-items: center;
     justify-content: flex-start;
     gap: 0.5rem;
+    position: relative;
+    padding: 0.5rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+    cursor: pointer;
+    border: solid thin transparent;
+    transition-duration: 300ms;
+}
+
+.user-button:hover {
+    background-color: var(--color-background-soft);
+    border: solid thin var(--color-border);
+}
+
+.user-button .user-expand {
+    display: flex;
+    position: absolute;
+    top: calc(100%);
+    padding: 0.3rem;
+    left: -1px;
+    flex-direction: column;
+    align-items: flex-start;
+    width: calc(100% + 2px);
+    gap: 0.5rem;
+    background-color: var(--color-background-soft);
+    border-bottom-left-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+    border: solid thin var(--color-border);
+
+    visibility: hidden;
+    opacity: 0;
+    transition-duration: 300ms;
+}
+
+.user-button:hover .user-expand {
+    opacity: 1;
+    visibility: visible;
+}
+
+.user-expand .button-base {
+    width: 100%;
+    font-weight: 600;
 }
 
 .user-image {
     height: 45px;
     width: auto;
     border-radius: 50%;
-    transform: scale(1);
-    transition-duration: 300ms;
 }
 
 .user-name {
     font-weight: 600;
-}
-
-.user-image:hover {
-    transform: scale(1.1);
-    transition-duration: 300ms;
 }
 
 .playlist-title {
